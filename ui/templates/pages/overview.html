@@ -1,0 +1,8 @@
+{{define "content"}}
+<div id="overview" data-name="{{.Profile.Name}}">
+  <header class="page-header"><div><h1 id="greeting">{{.Title}}</h1><p class="muted" id="overview-date"></p></div></header>
+  <div id="quick-add-slot"></div>
+  <div id="overview-body" class="stack"></div>
+</div>
+{{end}}
+{{define "scripts"}}<script type="module" src="/static/js/pages/overview.js"></script>{{end}}

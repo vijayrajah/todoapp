@@ -1,0 +1,8 @@
+{{define "content"}}
+<div id="tags-root">
+  <header class="page-header"><h1>{{.Title}}</h1></header>
+  <div id="tag-cloud" class="chip-row"></div>
+  <div id="tag-results" class="stack"></div>
+</div>
+{{end}}
+{{define "scripts"}}<script type="module" src="/static/js/pages/tags.js"></script>{{end}}

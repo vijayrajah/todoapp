@@ -1,0 +1,11 @@
+services:
+  todoapp:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - todoapp-data:/data
+    restart: unless-stopped
+
+volumes:
+  todoapp-data:

@@ -1,0 +1,9 @@
+{{define "content"}}
+<div id="tasks-root" data-view="{{.View}}">
+  <header class="page-header"><h1>{{.Title}}</h1><div class="page-actions" id="page-actions"></div></header>
+  <div id="quick-add-slot"></div>
+  <div id="filter-bar"></div>
+  <div id="task-list" class="stack"></div>
+</div>
+{{end}}
+{{define "scripts"}}<script type="module" src="/static/js/pages/tasks.js"></script>{{end}}
