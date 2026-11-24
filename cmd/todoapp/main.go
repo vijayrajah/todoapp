@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"todoapp/internal/buildinfo"
 	"todoapp/internal/config"
+	"todoapp/internal/daemon"
 	"todoapp/internal/db"
 	"todoapp/internal/logging"
 	"todoapp/internal/service"
@@ -34,6 +36,18 @@ func main() {
 	}
 }
 
+// withoutDaemonFlag drops --daemon (and --daemon=...) so the child does not daemonize again.
+func withoutDaemonFlag(args []string) []string {
+	var out []string
+	for _, a := range args {
+		if a == "--daemon" || strings.HasPrefix(a, "--daemon=") {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
 func run(args []string, out io.Writer) error {
 	info := buildinfo.New(buildTime, gitCommit)
 
@@ -45,9 +59,35 @@ func run(args []string, out io.Writer) error {
 		return err
 	}
 
-	log, err := logging.New(cfg.LogLevel, cfg.LogJSON)
+	if cfg.Daemon && !daemon.IsChild() {
+		if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
+			return err
+		}
+		pid, err := daemon.Start(withoutDaemonFlag(args), cfg.DaemonLogFile())
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "todoapp started in the background (pid %d), logging to %s\n", pid, cfg.DaemonLogFile())
+		return nil
+	}
+
+	// The background process already has stdout/stderr redirected to the log file.
+	logFile := cfg.LogFile
+	if daemon.IsChild() {
+		logFile = ""
+	}
+	log, closeLog, err := logging.New(cfg.LogLevel, cfg.LogJSON, logFile)
 	if err != nil {
 		return err
+	}
+	defer closeLog()
+
+	if cfg.PIDFile != "" {
+		removePID, err := daemon.WritePID(cfg.PIDFile)
+		if err != nil {
+			return err
+		}
+		defer removePID()
 	}
 
 	conn, err := db.Open(cfg.DBPath())
