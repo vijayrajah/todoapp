@@ -4,6 +4,7 @@
 .brand:hover{text-decoration:none}
 .brand-mark{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-size:.9rem}
 .user{display:flex;align-items:center;gap:.65rem;color:var(--text);padding:.35rem;border-radius:var(--radius-sm)}
+.user.active{background:var(--surface-2)}
 .user:hover{background:var(--surface-2);text-decoration:none}
 .avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-weight:600;font-size:.85rem;flex:none}
 .user-name{font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

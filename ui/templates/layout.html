@@ -22,10 +22,6 @@
 <div class="app">
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="/"><span class="brand-mark">✓</span> todoapp</a>
-  <a class="user" href="/profile" aria-label="Profile">
-    <span class="avatar" id="avatar" data-name="{{.Profile.Name}}" style="background:{{.Profile.AvatarColor}}"></span>
-    <span class="user-name">{{if .Profile.Name}}{{.Profile.Name}}{{else}}Set up profile{{end}}</span>
-  </a>
   <form class="search" action="/search" method="get" role="search">
     <label class="sr-only" for="search-input">Search</label>
     <input id="search-input" name="q" type="search" placeholder="Search  ( / )" autocomplete="off">
@@ -45,9 +41,12 @@
     <a href="/templates" class="{{if eq .Active "templates"}}active{{end}}">Templates</a>
     <a href="/tags" class="{{if eq .Active "tags"}}active{{end}}">Tags</a>
     <a href="/trash" class="{{if eq .Active "trash"}}active{{end}}">Trash</a>
-    <a href="/profile" class="{{if eq .Active "profile"}}active{{end}}">Profile</a>
   </nav>
   <div class="sidebar-foot">
+    <a class="user{{if eq .Active "profile"}} active{{end}}" href="/profile" aria-label="Profile">
+      <span class="avatar" id="avatar" data-name="{{.Profile.Name}}" style="background:{{.Profile.AvatarColor}}"></span>
+      <span class="user-name">{{if .Profile.Name}}{{.Profile.Name}}{{else}}Set up profile{{end}}</span>
+    </a>
     <div class="foot-row">
       {{if .ReadOnly}}<span class="badge-ro" title="Writes are disabled">read-only</span>{{end}}
       <button class="btn-ghost" id="theme-toggle" type="button" aria-label="Toggle theme">◐ Theme</button>
