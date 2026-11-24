@@ -34,22 +34,36 @@ export function dueLabel(due) {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}${year}`;
 }
 
+const DAY_CODES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export { DAY_CODES, DAY_NAMES };
+
 export function parseRecurrence(r) {
-  if (!r) return { unit: "", interval: 1, after: false };
-  const [unit, interval, after] = r.split(":");
-  return { unit, interval: parseInt(interval, 10) || 1, after: after === "after" };
+  if (!r) return { unit: "", interval: 1, after: false, days: [] };
+  const [unit, interval, ...rest] = r.split(":");
+  return {
+    unit,
+    interval: parseInt(interval, 10) || 1,
+    after: rest.includes("after"),
+    days: (rest.find((x) => x !== "after") || "").split(",").filter(Boolean),
+  };
 }
 
-export function buildRecurrence({ unit, interval, after }) {
+export function buildRecurrence({ unit, interval, after, days = [] }) {
   if (!unit) return "";
-  return `${unit}:${Math.max(1, interval | 0)}${after ? ":after" : ""}`;
+  const picked = unit === "weekly" ? DAY_CODES.filter((d) => days.includes(d)) : [];
+  return `${unit}:${Math.max(1, interval | 0)}${picked.length ? ":" + picked.join(",") : ""}${after ? ":after" : ""}`;
 }
 
 export function recurrenceLabel(r) {
-  const { unit, interval, after } = parseRecurrence(r);
+  const { unit, interval, after, days } = parseRecurrence(r);
   if (!unit) return "";
   const word = { daily: "day", weekly: "week", monthly: "month", yearly: "year" }[unit] || unit;
-  const base = interval === 1 ? `Every ${word}` : `Every ${interval} ${word}s`;
+  let base = interval === 1 ? `Every ${word}` : `Every ${interval} ${word}s`;
+  if (days.length) {
+    const names = days.map((d) => DAY_NAMES[DAY_CODES.indexOf(d)] || d).join("/");
+    base = interval === 1 ? `Every ${names}` : `${names}, every ${interval} weeks`;
+  }
   return after ? `${base} after completion` : base;
 }
 

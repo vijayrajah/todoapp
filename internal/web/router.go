@@ -21,6 +21,11 @@ type Server struct {
 	notes       *service.NoteService
 	reminders   *service.ReminderService
 	overviewSvc *service.OverviewService
+	backups     *service.BackupService
+	templates   *service.TemplateService
+	filters     *service.FilterService
+	attachments *service.AttachmentService
+	digest      *service.DigestService
 	renderer    *Renderer
 	assets      fs.FS
 	log         zerolog.Logger
@@ -36,6 +41,8 @@ type Options struct {
 	Log      zerolog.Logger
 	Build    buildinfo.Info
 	ReadOnly bool
+	Backups  *service.BackupService // optional; defaults to a service writing to ./backups
+	Digest   *service.DigestService // optional; a default one is created
 }
 
 // NewServer builds the server and its services.
@@ -45,7 +52,18 @@ func NewServer(o Options) (*Server, error) {
 		return nil, err
 	}
 	reminders := service.NewReminderService(o.Store)
+	if o.Backups == nil {
+		o.Backups = service.NewBackupService(o.Store, "backups", o.Log)
+	}
+	if o.Digest == nil {
+		o.Digest = service.NewDigestService(o.Store, o.Log)
+	}
 	return &Server{
+		backups:     o.Backups,
+		templates:   service.NewTemplateService(o.Store),
+		filters:     service.NewFilterService(o.Store),
+		attachments: service.NewAttachmentService(o.Store),
+		digest:      o.Digest,
 		store:       o.Store,
 		tasks:       service.NewTaskService(o.Store),
 		notes:       service.NewNoteService(o.Store),
@@ -80,6 +98,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) registerAPI(api chi.Router) {
+	s.registerFeatureAPI(api)
 	api.Get("/overview", s.overview)
 	api.Get("/search", s.search)
 	api.Get("/tags", s.listTags)
@@ -145,5 +164,9 @@ func (s *Server) registerAPI(api chi.Router) {
 		r.Get("/export", s.exportBackup)
 		r.Get("/database", s.downloadDatabase)
 		r.Post("/import", s.importBackup)
+		r.Get("/settings", s.getBackupSettings)
+		r.Put("/settings", s.updateBackupSettings)
+		r.Get("/files", s.listBackupFiles)
+		r.Post("/run", s.runBackupNow)
 	})
 }

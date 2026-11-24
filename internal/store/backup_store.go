@@ -31,14 +31,34 @@ func (s *Store) ExportAll(ctx context.Context) (model.Backup, error) {
 	if err != nil {
 		return model.Backup{}, err
 	}
+	templates, err := s.ListTemplates(ctx)
+	if err != nil {
+		return model.Backup{}, err
+	}
+	filters, err := s.ListFilters(ctx)
+	if err != nil {
+		return model.Backup{}, err
+	}
+	attachments, err := exportAttachments(ctx, s.db)
+	if err != nil {
+		return model.Backup{}, err
+	}
+	prefs, err := s.GetPreferences(ctx)
+	if err != nil {
+		return model.Backup{}, err
+	}
 	return model.Backup{
-		Version:    model.BackupVersion,
-		ExportedAt: s.ts(),
-		Profile:    profile,
-		Projects:   projects,
-		Tasks:      tasks,
-		Notes:      notes,
-		Reminders:  reminders,
+		Version:     model.BackupVersion,
+		Templates:   templates,
+		Filters:     filters,
+		Attachments: attachments,
+		Preferences: &prefs,
+		ExportedAt:  s.ts(),
+		Profile:     profile,
+		Projects:    projects,
+		Tasks:       tasks,
+		Notes:       notes,
+		Reminders:   reminders,
 	}, nil
 }
 
@@ -65,12 +85,35 @@ func (s *Store) ImportAll(ctx context.Context, b model.Backup) error {
 			return fmt.Errorf("note %d: %w", b.Notes[i].ID, err)
 		}
 	}
+	for i := range b.Templates {
+		if err := b.Templates[i].Clean(); err != nil {
+			return fmt.Errorf("template %d: %w", b.Templates[i].ID, err)
+		}
+	}
+	for i := range b.Filters {
+		if err := b.Filters[i].Clean(); err != nil {
+			return fmt.Errorf("filter %d: %w", b.Filters[i].ID, err)
+		}
+	}
+	for _, a := range b.Attachments {
+		if len(a.Data) > model.MaxAttachmentBytes {
+			return model.ValidationError("attachment is too large")
+		}
+	}
+	if b.Preferences != nil {
+		if err := b.Preferences.CleanAppearance(); err != nil {
+			return err
+		}
+		if err := b.Preferences.CleanDigest(); err != nil {
+			return err
+		}
+	}
 
 	return s.inTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "PRAGMA defer_foreign_keys = ON"); err != nil {
 			return err
 		}
-		for _, table := range []string{"reminders", "task_tags", "note_tags", "tasks", "notes", "projects", "tags", "search_index", "sqlite_sequence"} {
+		for _, table := range []string{"attachments", "task_checklist", "task_templates", "saved_filters", "reminders", "task_tags", "note_tags", "tasks", "notes", "projects", "tags", "search_index", "sqlite_sequence"} {
 			if _, err := tx.ExecContext(ctx, "DELETE FROM "+table); err != nil {
 				return err
 			}
@@ -80,7 +123,10 @@ func (s *Store) ImportAll(ctx context.Context, b model.Backup) error {
 			b.Profile.Name, b.Profile.Email, b.Profile.Timezone, b.Profile.Bio, b.Profile.AvatarColor); err != nil {
 			return err
 		}
-		return s.insertBackupRows(ctx, tx, b)
+		if err := s.insertBackupRows(ctx, tx, b); err != nil {
+			return err
+		}
+		return s.insertBackupExtras(ctx, tx, b)
 	})
 }
 
@@ -107,6 +153,9 @@ func (s *Store) insertBackupRows(ctx context.Context, tx *sql.Tx, b model.Backup
 		if err := setTags(ctx, tx, "task_tags", "task_id", t.ID, t.Tags); err != nil {
 			return err
 		}
+		if err := setChecklist(ctx, tx, t.ID, t.Checklist); err != nil {
+			return err
+		}
 		if err := indexTask(ctx, tx, t.ID); err != nil {
 			return err
 		}
@@ -129,6 +178,45 @@ func (s *Store) insertBackupRows(ctx context.Context, tx *sql.Tx, b model.Backup
 			"INSERT INTO reminders (id, message, task_id, note_id, remind_at, snoozed_until, dismissed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 			r.ID, r.Message, nullID(r.TaskID), nullID(r.NoteID), r.RemindAt, nullStr(r.SnoozedUntil), nullStr(r.DismissedAt), r.CreatedAt); err != nil {
 			return fmt.Errorf("insert reminder %d: %w", r.ID, err)
+		}
+	}
+	return nil
+}
+
+// insertBackupExtras restores templates, saved filters, attachments and preferences.
+func (s *Store) insertBackupExtras(ctx context.Context, tx *sql.Tx, b model.Backup) error {
+	for _, t := range b.Templates {
+		data, err := templateJSON(t)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "INSERT INTO task_templates (id, name, data, position, created_at) VALUES (?, ?, ?, ?, ?)",
+			t.ID, t.Name, data, t.Position, t.CreatedAt); err != nil {
+			return fmt.Errorf("insert template %d: %w", t.ID, err)
+		}
+	}
+	for _, f := range b.Filters {
+		data, err := filterJSON(f)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "INSERT INTO saved_filters (id, name, data, position, created_at) VALUES (?, ?, ?, ?, ?)",
+			f.ID, f.Name, data, f.Position, f.CreatedAt); err != nil {
+			return fmt.Errorf("insert filter %d: %w", f.ID, err)
+		}
+	}
+	for _, a := range b.Attachments {
+		if _, err := tx.ExecContext(ctx,
+			"INSERT INTO attachments (id, task_id, note_id, filename, content_type, size, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			a.ID, nullID(a.TaskID), nullID(a.NoteID), model.CleanFilename(a.Filename), a.ContentType, len(a.Data), a.Data, a.CreatedAt); err != nil {
+			return fmt.Errorf("insert attachment %d: %w", a.ID, err)
+		}
+	}
+	if p := b.Preferences; p != nil {
+		if _, err := tx.ExecContext(ctx,
+			"UPDATE preferences SET theme = ?, accent = ?, digest_enabled = ?, digest_time = ?, digest_webhook = ? WHERE id = 1",
+			p.Theme, p.Accent, boolInt(p.DigestEnabled), p.DigestTime, p.DigestWebhook); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -18,25 +18,26 @@ const (
 
 // Task is a unit of work. Empty strings / zero ids mean "not set".
 type Task struct {
-	ID              int64    `json:"id"`
-	Title           string   `json:"title"`
-	Description     string   `json:"description"`
-	DescriptionHTML string   `json:"description_html"`
-	Status          string   `json:"status"`
-	Priority        int      `json:"priority"`
-	DueDate         string   `json:"due_date"`
-	ProjectID       int64    `json:"project_id"`
-	ProjectName     string   `json:"project_name"`
-	ProjectColor    string   `json:"project_color"`
-	ParentID        int64    `json:"parent_id"`
-	Recurrence      string   `json:"recurrence"`
-	Position        int64    `json:"position"`
-	Tags            []string `json:"tags"`
-	Subtasks        []Task   `json:"subtasks"`
-	CompletedAt     string   `json:"completed_at"`
-	DeletedAt       string   `json:"deleted_at,omitempty"`
-	CreatedAt       string   `json:"created_at"`
-	UpdatedAt       string   `json:"updated_at"`
+	ID              int64           `json:"id"`
+	Title           string          `json:"title"`
+	Description     string          `json:"description"`
+	DescriptionHTML string          `json:"description_html"`
+	Status          string          `json:"status"`
+	Priority        int             `json:"priority"`
+	DueDate         string          `json:"due_date"`
+	ProjectID       int64           `json:"project_id"`
+	ProjectName     string          `json:"project_name"`
+	ProjectColor    string          `json:"project_color"`
+	ParentID        int64           `json:"parent_id"`
+	Recurrence      string          `json:"recurrence"`
+	Position        int64           `json:"position"`
+	Tags            []string        `json:"tags"`
+	Subtasks        []Task          `json:"subtasks"`
+	Checklist       []ChecklistItem `json:"checklist"`
+	CompletedAt     string          `json:"completed_at"`
+	DeletedAt       string          `json:"deleted_at,omitempty"`
+	CreatedAt       string          `json:"created_at"`
+	UpdatedAt       string          `json:"updated_at"`
 }
 
 // Clean trims and validates user-editable fields.
@@ -65,6 +66,13 @@ func (t *Task) Clean() error {
 		}
 	}
 	t.Tags = NormalizeTags(t.Tags)
+	if t.Checklist != nil {
+		items, err := CleanChecklist(t.Checklist)
+		if err != nil {
+			return err
+		}
+		t.Checklist = items
+	}
 	return nil
 }
 
@@ -75,6 +83,7 @@ type TaskFilter struct {
 	Tag             string
 	DueFrom         string // inclusive
 	DueTo           string // inclusive
+	NoDue           bool   // only tasks without a due date
 	MinPriority     int
 	TopLevelOnly    bool
 	WithSubtasks    bool   // nest subtasks (implies TopLevelOnly)

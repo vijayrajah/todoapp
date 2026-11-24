@@ -1,0 +1,44 @@
+/* Calendar, checklist, attachments, saved views, digest */
+.nav a.sub{padding-left:1.6rem;font-size:.9em;color:var(--muted)}
+
+.checklist{list-style:none;margin:.25rem 0;padding:0;display:grid;gap:.25rem}
+.checklist li{display:flex;gap:.5rem;align-items:center}
+.checklist li input[type=text]{flex:1;min-width:0}
+.checklist li.done span{text-decoration:line-through;color:var(--muted)}
+.chip-progress{font-size:.78rem;color:var(--muted);background:var(--surface-2);border-radius:99px;padding:0 .5rem;cursor:pointer;border:0}
+.task-checks{list-style:none;margin:.35rem 0 0;padding:0 0 0 2rem;display:grid;gap:.2rem;font-size:.9rem}
+.task-checks label{display:flex;gap:.45rem;align-items:center}
+
+.weekdays{display:flex;gap:.3rem;flex-wrap:wrap}
+.weekdays label{border:1px solid var(--border);border-radius:var(--radius-sm);padding:.15rem .5rem;cursor:pointer;user-select:none}
+.weekdays input{position:absolute;opacity:0}
+.weekdays label:has(input:checked){background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.weekdays label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+.attachments{display:grid;gap:.4rem}
+.attachment{display:flex;gap:.6rem;align-items:center;background:var(--surface-2);border-radius:var(--radius-sm);padding:.35rem .5rem}
+.attachment img{width:44px;height:44px;object-fit:cover;border-radius:6px}
+.attachment .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.cal-head{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.cal-head h1{flex:1;font-size:1.4rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cal-dow{background:var(--surface-2);padding:.35rem;text-align:center;font-size:.8rem;color:var(--muted)}
+.cal-day{background:var(--surface);min-height:6.5rem;padding:.25rem;display:flex;flex-direction:column;gap:.2rem;cursor:pointer}
+.cal-grid.week .cal-day{min-height:16rem}
+.cal-day.other{background:var(--bg);opacity:.75}
+.cal-day.drop{outline:2px dashed var(--accent);outline-offset:-2px}
+.cal-day .num{font-size:.8rem;color:var(--muted)}
+.cal-day.today .num{background:var(--accent);color:var(--accent-fg);border-radius:99px;padding:0 .4rem;align-self:flex-start}
+.cal-chip{font-size:.78rem;border-left:3px solid var(--p0);background:var(--surface-2);border-radius:4px;padding:.1rem .3rem;cursor:grab;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-chip.done{text-decoration:line-through;opacity:.6}
+.cal-chip.overdue{color:var(--danger)}
+.cal-chip[data-p="3"]{border-left-color:var(--p3)}
+.cal-chip[data-p="2"]{border-left-color:var(--p2)}
+.cal-chip[data-p="1"]{border-left-color:var(--p1)}
+@media (max-width:640px){.cal-day{min-height:4.5rem}.cal-chip{font-size:.7rem}}
+
+.digest-list{margin:.25rem 0 .75rem;padding-left:1.1rem}
+.card-list{display:grid;gap:.6rem}
+.card-row{display:flex;gap:.6rem;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .8rem}
+.card-row .grow{flex:1;min-width:0}

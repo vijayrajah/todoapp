@@ -29,6 +29,11 @@ func (c Config) DBPath() string {
 	return filepath.Join(c.DataDir, "todoapp.db")
 }
 
+// DefaultBackupDir is used for auto backups until a location is set in the UI.
+func (c Config) DefaultBackupDir() string {
+	return filepath.Join(c.DataDir, "backups")
+}
+
 // Parse reads flags from args. Usage and version output go to out.
 func Parse(args []string, info buildinfo.Info, out io.Writer) (Config, error) {
 	var cfg Config

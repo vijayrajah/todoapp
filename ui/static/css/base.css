@@ -9,7 +9,7 @@
   --ease:.18s ease;color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
+  :root:not([data-theme]){
     --accent:#8793ff;--accent-soft:rgba(135,147,255,.16);--accent-fg:#10111a;
     --bg:#14151c;--surface:#1c1d27;--surface-2:#252633;--border:#2d2f3e;
     --text:#e8e9f1;--muted:#9a9db2;--danger:#ff6b6b;--p0:#5b5e70;

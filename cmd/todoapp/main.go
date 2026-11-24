@@ -15,6 +15,7 @@ import (
 	"todoapp/internal/config"
 	"todoapp/internal/db"
 	"todoapp/internal/logging"
+	"todoapp/internal/service"
 	"todoapp/internal/store"
 	"todoapp/internal/web"
 	"todoapp/ui"
@@ -55,8 +56,11 @@ func run(args []string, out io.Writer) error {
 	}
 	defer conn.Close()
 
+	st := store.New(conn)
+	backups := service.NewBackupService(st, cfg.DefaultBackupDir(), log)
+	digest := service.NewDigestService(st, log)
 	srv, err := web.NewServer(web.Options{
-		Store: store.New(conn), UI: ui.FS, Log: log, Build: info, ReadOnly: cfg.ReadOnly,
+		Store: st, UI: ui.FS, Log: log, Build: info, ReadOnly: cfg.ReadOnly, Backups: backups, Digest: digest,
 	})
 	if err != nil {
 		return err
@@ -73,6 +77,11 @@ func run(args []string, out io.Writer) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if !cfg.ReadOnly {
+		backups.Start(ctx)
+		digest.Start(ctx)
+	}
 
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- httpServer.ListenAndServe() }()

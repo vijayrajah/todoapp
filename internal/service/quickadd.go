@@ -133,6 +133,58 @@ func nextWeekday(today time.Time, wd time.Weekday) time.Time {
 	return today.AddDate(0, 0, diff)
 }
 
+// parseDayList recognises weekday names such as "mon wed fri", "mon,wed,fri", "monday/friday" or "weekday(s)"
+// (Mon-Fri) and returns how many words were used.
+func parseDayList(words []string) (int, []time.Weekday) {
+	set := map[time.Weekday]bool{}
+	used := 0
+	for _, word := range words {
+		parts := strings.FieldsFunc(strings.ToLower(word), func(r rune) bool { return r == ',' || r == '/' })
+		if len(parts) == 0 {
+			break
+		}
+		add := map[time.Weekday]bool{}
+		for _, p := range parts {
+			if p == "weekday" || p == "weekdays" {
+				for d := time.Monday; d <= time.Friday; d++ {
+					add[d] = true
+				}
+				continue
+			}
+			d, ok := weekdays[p]
+			if !ok {
+				add = nil
+				break
+			}
+			add[d] = true
+		}
+		if add == nil {
+			break
+		}
+		for d := range add {
+			set[d] = true
+		}
+		used++
+	}
+	if used == 0 {
+		return 0, nil
+	}
+	return used, model.SortedDays(set)
+}
+
+// firstOnOrAfter returns the first day on or after from whose weekday is in days.
+func firstOnOrAfter(from time.Time, days []time.Weekday) time.Time {
+	for i := 0; i < 7; i++ {
+		d := from.AddDate(0, 0, i)
+		for _, wd := range days {
+			if d.Weekday() == wd {
+				return d
+			}
+		}
+	}
+	return from
+}
+
 // parseRecurrence recognises "daily", "every week", "every 2 months" and returns words used.
 func parseRecurrence(words []string) (int, string) {
 	w := strings.ToLower(words[0])
@@ -141,6 +193,9 @@ func parseRecurrence(words []string) (int, string) {
 	}
 	if w != "every" || len(words) < 2 {
 		return 0, ""
+	}
+	if used, days := parseDayList(words[1:]); used > 0 {
+		return 1 + used, model.Recurrence{Unit: model.UnitWeekly, Interval: 1, Days: days}.String()
 	}
 	if unit, ok := unitWords[strings.ToLower(words[1])]; ok {
 		return 2, model.Recurrence{Unit: unit, Interval: 1}.String()

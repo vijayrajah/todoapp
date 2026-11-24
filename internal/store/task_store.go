@@ -25,6 +25,7 @@ func scanTask(row scanner) (model.Task, error) {
 		&t.CompletedAt, &t.DeletedAt, &t.CreatedAt, &t.UpdatedAt)
 	t.Tags = []string{}
 	t.Subtasks = []model.Task{}
+	t.Checklist = []model.ChecklistItem{}
 	return t, err
 }
 
@@ -60,9 +61,16 @@ func queryTasks(ctx context.Context, q querier, where string, args []any, orderB
 	if err != nil {
 		return nil, err
 	}
+	checklists, err := loadChecklists(ctx, q, ids)
+	if err != nil {
+		return nil, err
+	}
 	for i := range tasks {
 		if tg := tags[tasks[i].ID]; tg != nil {
 			tasks[i].Tags = tg
+		}
+		if cl := checklists[tasks[i].ID]; cl != nil {
+			tasks[i].Checklist = cl
 		}
 	}
 	return tasks, nil
@@ -105,6 +113,9 @@ func (s *Store) ListTasks(ctx context.Context, f model.TaskFilter) ([]model.Task
 	if f.DueTo != "" {
 		where = append(where, "t.due_date <= ?")
 		args = append(args, f.DueTo)
+	}
+	if f.NoDue {
+		where = append(where, "t.due_date IS NULL")
 	}
 	if f.MinPriority > 0 {
 		where = append(where, "t.priority >= ?")
@@ -196,6 +207,9 @@ func (s *Store) createTaskTx(ctx context.Context, tx *sql.Tx, t *model.Task) (in
 	if err := setTags(ctx, tx, "task_tags", "task_id", id, t.Tags); err != nil {
 		return 0, err
 	}
+	if err := setChecklist(ctx, tx, id, t.Checklist); err != nil {
+		return 0, err
+	}
 	if err := indexTask(ctx, tx, id); err != nil {
 		return 0, err
 	}
@@ -228,6 +242,11 @@ func (s *Store) UpdateTask(ctx context.Context, t *model.Task) error {
 		}
 		if err := setTags(ctx, tx, "task_tags", "task_id", t.ID, t.Tags); err != nil {
 			return err
+		}
+		if t.Checklist != nil {
+			if err := setChecklist(ctx, tx, t.ID, t.Checklist); err != nil {
+				return err
+			}
 		}
 		return indexTask(ctx, tx, t.ID)
 	})

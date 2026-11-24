@@ -1,5 +1,6 @@
 import { el, readOnly } from "../lib/dom.js";
-import { post, del } from "../lib/api.js";
+import { post, put, del } from "../lib/api.js";
+import { taskBody } from "../lib/tasks.js";
 import { dueLabel, isOverdue, recurrenceLabel, todayStr } from "../lib/format.js";
 import { makeSortable } from "../lib/sortable.js";
 import { toast, toastError } from "./toast.js";
@@ -48,6 +49,22 @@ export function taskRow(task, { refresh, sub = false, showProject = true } = {})
       el("i", { style: `background:${CSS.supports("color", task.project_color || "") ? task.project_color : "var(--accent)"}` }), task.project_name));
   }
   for (const t of task.tags || []) meta.append(el("a", { class: "chip", href: `/tags?name=${encodeURIComponent(t)}` }, "#" + t));
+  const checks = task.checklist || [];
+  let checkBox = null;
+  if (checks.length) {
+    const n = checks.filter((c) => c.done).length;
+    checkBox = el("ul", { class: "task-checks", hidden: true });
+    for (const [i, c] of checks.entries()) {
+      checkBox.append(el("li", {}, el("label", {},
+        el("input", { type: "checkbox", checked: c.done, disabled: ro, onchange: async (e) => {
+          const items = checks.map((x, j) => ({ text: x.text, done: j === i ? e.target.checked : x.done }));
+          try { await put(`/api/tasks/${task.id}`, taskBody(task, { checklist: items })); refresh(); } catch (x) { e.target.checked = !e.target.checked; toastError(x); }
+        } }),
+        el("span", { class: c.done ? "muted" : "" }, c.text))));
+    }
+    meta.append(el("button", { type: "button", class: "chip-progress", title: "Show checklist",
+      onclick: () => { checkBox.hidden = !checkBox.hidden; } }, `☑ ${n}/${checks.length}`));
+  }
   const subs = task.subtasks || [];
   if (subs.length) {
     const n = subs.filter((s) => s.status === "done").length;
@@ -85,6 +102,7 @@ export function taskRow(task, { refresh, sub = false, showProject = true } = {})
       check, el("div", { class: "task-body" }, titleBtn, meta), actions),
     subBox, addBox
   );
+  if (checkBox) row.querySelector(".task-main").after(checkBox);
   for (const s of subs) subBox.append(taskRow(s, { refresh, sub: true, showProject: false }));
   if (subs.length) makeSortable(subBox, ".task", reorderTasks);
   return row;

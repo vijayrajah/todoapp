@@ -66,6 +66,27 @@ func (s *TaskService) List(ctx context.Context, view string, projectID int64, ta
 	return tasks, nil
 }
 
+// maxRangeDays bounds calendar queries.
+const maxRangeDays = 70
+
+// ListRange returns open and done tasks due between from and to (inclusive), flat, for the calendar.
+func (s *TaskService) ListRange(ctx context.Context, from, to string) ([]model.Task, error) {
+	start, err1 := time.Parse(model.DateLayout, from)
+	end, err2 := time.Parse(model.DateLayout, to)
+	if err1 != nil || err2 != nil {
+		return nil, model.ValidationError("from and to must be YYYY-MM-DD")
+	}
+	if end.Before(start) || end.Sub(start) > maxRangeDays*24*time.Hour {
+		return nil, model.ValidationError("invalid date range")
+	}
+	tasks, err := s.store.ListTasks(ctx, model.TaskFilter{DueFrom: from, DueTo: to, Order: "due", Limit: 2000})
+	if err != nil {
+		return nil, err
+	}
+	renderTasks(tasks)
+	return tasks, nil
+}
+
 // Get returns one task with subtasks.
 func (s *TaskService) Get(ctx context.Context, id int64) (model.Task, error) {
 	t, err := s.store.GetTask(ctx, id)
@@ -127,6 +148,9 @@ func (s *TaskService) QuickAdd(ctx context.Context, text string, projectID int64
 	}
 	if t.Recurrence != "" && t.DueDate == "" {
 		t.DueDate = dateString(today)
+		if rule, err := model.ParseRecurrence(t.Recurrence); err == nil && len(rule.Days) > 0 {
+			t.DueDate = dateString(firstOnOrAfter(today, rule.Days))
+		}
 	}
 	return s.Create(ctx, t)
 }
@@ -202,6 +226,9 @@ func (s *TaskService) nextOccurrence(ctx context.Context, done model.Task) (*mod
 	next := &model.Task{
 		Title: done.Title, Description: done.Description, Priority: done.Priority,
 		DueDate: due, ProjectID: done.ProjectID, Recurrence: done.Recurrence, Tags: done.Tags,
+	}
+	for _, it := range done.Checklist {
+		next.Checklist = append(next.Checklist, model.ChecklistItem{Text: it.Text})
 	}
 	for _, sub := range done.Subtasks {
 		next.Subtasks = append(next.Subtasks, model.Task{

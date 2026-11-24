@@ -12,4 +12,10 @@ type Backup struct {
 	Tasks      []Task     `json:"tasks"` // flat, includes trashed
 	Notes      []Note     `json:"notes"`
 	Reminders  []Reminder `json:"reminders"`
+
+	// Added after version 1; absent in older exports.
+	Templates   []Template       `json:"templates,omitempty"`
+	Filters     []SavedFilter    `json:"filters,omitempty"`
+	Attachments []AttachmentData `json:"attachments,omitempty"`
+	Preferences *Preferences     `json:"preferences,omitempty"`
 }

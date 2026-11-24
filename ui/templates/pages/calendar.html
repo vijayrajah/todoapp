@@ -1,0 +1,14 @@
+{{define "content"}}
+<div id="calendar-root">
+  <div class="cal-head">
+    <h1 id="cal-title">{{.Title}}</h1>
+    <button class="btn" type="button" id="cal-prev" aria-label="Previous">‹</button>
+    <button class="btn" type="button" id="cal-today">Today</button>
+    <button class="btn" type="button" id="cal-next" aria-label="Next">›</button>
+    <button class="btn" type="button" id="cal-mode">Week</button>
+  </div>
+  <p class="muted">Drag a task to another day to reschedule it. Click an empty day to add a task.</p>
+  <div id="cal-grid" class="cal-grid"></div>
+</div>
+{{end}}
+{{define "scripts"}}<script type="module" src="/static/js/pages/calendar.js"></script>{{end}}

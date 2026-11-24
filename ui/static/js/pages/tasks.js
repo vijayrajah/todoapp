@@ -5,15 +5,19 @@ import { quickAdd } from "../components/quick-add.js";
 import { openTaskDialog } from "../components/task-dialog.js";
 import { taskList, taskGroup } from "../components/task-list.js";
 import { toastError } from "../components/toast.js";
+import { openFilterDialog } from "../components/filter-dialog.js";
+import { chooseTemplate } from "../components/template-dialog.js";
 
 const root = $("#tasks-root");
 const view = root.dataset.view || "all";
+const filterId = parseInt(root.dataset.filter, 10) || 0;
 const q = params();
 const project = parseInt(q.get("project"), 10) || 0;
 const tag = q.get("tag") || "";
 const listEl = $("#task-list");
 
 const EMPTY = {
+  filter: ["🔎", "No tasks match this view."],
   today: ["🎉", "Nothing due today. Enjoy the calm."],
   upcoming: ["🌤️", "Nothing coming up in the next 7 days."],
   all: ["✨", "No open tasks. Add one above."],
@@ -41,7 +45,8 @@ function render(tasks) {
 
 async function load() {
   try {
-    render((await get("/api/tasks" + qs({ view, project, tag }))) || []);
+    const url = view === "filter" ? `/api/filters/${filterId}/tasks` : "/api/tasks" + qs({ view, project, tag });
+    render((await get(url)) || []);
   } catch (e) { toastError(e); }
 }
 
@@ -64,12 +69,27 @@ async function openFromQuery() {
   try { openTaskDialog({ task: await get(`/api/tasks/${id}`), onSaved: load }); } catch (e) { toastError(e); }
 }
 
-if (view !== "completed" && !readOnly()) {
+if (view !== "completed" && view !== "filter" && !readOnly()) {
   const qa = quickAdd({ projectId: project, onAdd: load });
   $("#quick-add-slot").append(qa);
   if (q.get("new")) { dropParam("new"); $("#quick-add-input").focus(); }
 }
-if (!readOnly() && view !== "completed") {
+if (!readOnly() && view !== "completed" && view !== "filter") {
+  const actions = $("#page-actions");
+  actions.append(el("button", { class: "btn", type: "button", onclick: () => chooseTemplate({ projectId: project, onCreated: load }) }, "From template…"));
+  actions.append(el("button", { class: "btn", type: "button", onclick: () => openFilterDialog({
+    filter: { project_id: project, tag, status: "todo", due: { today: "today_overdue", upcoming: "next7" }[view] || "" },
+    onSaved: (f) => { if (f) location.href = `/views/${f.id}`; },
+  }) }, "Save as view…"));
+}
+if (view === "filter" && !readOnly()) {
+  get(`/api/filters`).then((all) => {
+    const f = (all || []).find((x) => x.id === filterId);
+    if (f) $("#page-actions").append(el("button", { class: "btn", type: "button", onclick: () => openFilterDialog({
+      filter: f, onSaved: (saved) => { location.href = saved ? `/views/${saved.id}` : "/views"; } }) }, "Edit view…"));
+  }).catch(toastError);
+}
+if (!readOnly() && view !== "completed" && view !== "filter") {
   $("#page-actions").append(el("button", { class: "btn", type: "button", onclick: () => openTaskDialog({ projectId: project, onSaved: load }) }, "New task…"));
 }
 filterBar();

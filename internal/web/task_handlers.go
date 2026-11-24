@@ -12,7 +12,13 @@ func (s *Server) listTasks(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	tasks, err := s.tasks.List(r.Context(), r.URL.Query().Get("view"), projectID, r.URL.Query().Get("tag"))
+	q := r.URL.Query()
+	var tasks []model.Task
+	if q.Get("view") == "range" {
+		tasks, err = s.tasks.ListRange(r.Context(), q.Get("from"), q.Get("to"))
+	} else {
+		tasks, err = s.tasks.List(r.Context(), q.Get("view"), projectID, q.Get("tag"))
+	}
 	if err != nil {
 		s.fail(w, r, err)
 		return

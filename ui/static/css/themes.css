@@ -1,0 +1,33 @@
+/* Extra themes. "auto" has no data-theme attribute and follows the OS (see base.css). */
+:root[data-theme="light"]{
+  --accent:#5b6cf0;--accent-soft:rgba(91,108,240,.12);--accent-fg:#fff;
+  --bg:#f7f7f9;--surface:#fff;--surface-2:#f0f1f5;--border:#e4e5ec;
+  --text:#1c1d26;--muted:#6c6f80;--danger:#d93a3a;--p0:#b4b7c4;color-scheme:light;
+}
+:root[data-theme="midnight"]{
+  --accent:#4fd1c5;--accent-soft:rgba(79,209,197,.16);--accent-fg:#04110f;
+  --bg:#000;--surface:#0b0d12;--surface-2:#141821;--border:#222733;
+  --text:#e6e9ef;--muted:#8b93a5;--danger:#ff6b6b;--p0:#4a5060;
+  --shadow:0 1px 2px rgba(0,0,0,.5);color-scheme:dark;
+}
+:root[data-theme="nord"]{
+  --accent:#88c0d0;--accent-soft:rgba(136,192,208,.18);--accent-fg:#2e3440;
+  --bg:#2e3440;--surface:#3b4252;--surface-2:#434c5e;--border:#4c566a;
+  --text:#eceff4;--muted:#a5b0c5;--danger:#bf616a;--p3:#bf616a;--p2:#ebcb8b;--p1:#81a1c1;--p0:#6b7790;
+  --shadow:0 1px 2px rgba(0,0,0,.25);color-scheme:dark;
+}
+:root[data-theme="solarized"]{
+  --accent:#268bd2;--accent-soft:rgba(38,139,210,.14);--accent-fg:#fff;
+  --bg:#fdf6e3;--surface:#fffaf0;--surface-2:#eee8d5;--border:#e0d9c3;
+  --text:#073642;--muted:#657b83;--danger:#dc322f;--p3:#dc322f;--p2:#b58900;--p1:#268bd2;--p0:#93a1a1;
+  color-scheme:light;
+}
+:root[data-theme="sepia"]{
+  --accent:#a0522d;--accent-soft:rgba(160,82,45,.14);--accent-fg:#fff;
+  --bg:#f4ecd8;--surface:#fbf5e6;--surface-2:#ebe1c8;--border:#dccfae;
+  --text:#3b2f20;--muted:#7b6a52;--danger:#b23a2e;--p0:#b9a98a;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --accent:#8793ff;--accent-soft:rgba(135,147,255,.16);--accent-fg:#10111a;
+}

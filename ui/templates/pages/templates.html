@@ -1,0 +1,8 @@
+{{define "content"}}
+<div id="templates-root">
+  <header class="page-header"><h1>{{.Title}}</h1><div class="page-actions" id="page-actions"></div></header>
+  <p class="muted">Reusable task sets, such as a packing list. Create a task from a template in one click.</p>
+  <div id="template-list" class="card-list"></div>
+</div>
+{{end}}
+{{define "scripts"}}<script type="module" src="/static/js/pages/templates.js"></script>{{end}}

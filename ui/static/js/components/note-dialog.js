@@ -2,6 +2,7 @@ import { el } from "../lib/dom.js";
 import { post, put, del } from "../lib/api.js";
 import { modal, field, confirmDialog } from "../lib/modal.js";
 import { tagInput } from "./tag-input.js";
+import { attachmentsSection } from "./attachments.js";
 import { toast, toastError } from "./toast.js";
 
 // Create (note = null) or edit a note. onSaved() runs after save/delete.
@@ -31,6 +32,7 @@ export function openNoteDialog({ note = null, onSaved } = {}) {
       field("Title", title), field("Body", bodyText),
       el("div", { class: "field" }, el("label", {}, "Tags"), tags.node),
       el("label", { class: "inline field" }, pinned, "Pin to top"),
+      attachmentsSection("note", n.id),
     ],
     extra,
     onSubmit: async () => {

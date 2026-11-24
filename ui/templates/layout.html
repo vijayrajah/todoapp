@@ -1,11 +1,11 @@
 {{define "layout"}}<!DOCTYPE html>
-<html lang="en">
+<html lang="en"{{if ne .Theme "auto"}} data-theme="{{.Theme}}"{{end}}{{if .AccentStyle}} style="{{.AccentStyle}}"{{end}}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · todoapp</title>
-<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/themes.css">
 <link rel="stylesheet" href="/static/css/layout.css">
 <link rel="stylesheet" href="/static/css/forms.css">
 <link rel="stylesheet" href="/static/css/tasks.css">
@@ -13,8 +13,9 @@
 <link rel="stylesheet" href="/static/css/dialogs.css">
 <link rel="stylesheet" href="/static/css/toasts.css">
 <link rel="stylesheet" href="/static/css/overview.css">
+<link rel="stylesheet" href="/static/css/features.css">
 </head>
-<body data-today="{{.Today}}" data-read-only="{{.ReadOnly}}" data-page="{{.Active}}">
+<body data-today="{{.Today}}" data-read-only="{{.ReadOnly}}" data-page="{{.Active}}" data-theme-name="{{.Theme}}" data-digest="{{.DigestEnabled}}">
 <a class="skip-link" href="#content">Skip to content</a>
 <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
 <div class="scrim" id="scrim"></div>
@@ -34,9 +35,14 @@
     <a href="/today" class="{{if eq .Active "today"}}active{{end}}">Today</a>
     <a href="/upcoming" class="{{if eq .Active "upcoming"}}active{{end}}">Upcoming</a>
     <a href="/tasks" class="{{if eq .Active "tasks"}}active{{end}}">Tasks</a>
+    <a href="/calendar" class="{{if eq .Active "calendar"}}active{{end}}">Calendar</a>
     <a href="/projects" class="{{if eq .Active "projects"}}active{{end}}">Projects</a>
+    <a href="/views" class="{{if eq .Active "views"}}active{{end}}">Saved views</a>
+    {{range .Filters}}<a class="sub" href="/views/{{.ID}}">{{.Name}}</a>
+    {{end}}
     <a href="/notes" class="{{if eq .Active "notes"}}active{{end}}">Notes</a>
     <a href="/reminders" class="{{if eq .Active "reminders"}}active{{end}}">Reminders</a>
+    <a href="/templates" class="{{if eq .Active "templates"}}active{{end}}">Templates</a>
     <a href="/tags" class="{{if eq .Active "tags"}}active{{end}}">Tags</a>
     <a href="/trash" class="{{if eq .Active "trash"}}active{{end}}">Trash</a>
     <a href="/profile" class="{{if eq .Active "profile"}}active{{end}}">Profile</a>
